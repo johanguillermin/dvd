@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ma DVDthèque</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --card-bg: #262626;
+            --text-color: #ffffff;
+            --text-secondary: #aaaaaa;
+            --accent-color: #e50914;
+            --modal-overlay: rgba(0, 0, 0, 0.85);
+            --input-bg: #333333;
+            --selection-color: #2ecc71; /* Vert pour la sélection */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 25px 0;
+            background: radial-gradient(circle, #2a1111 0%, #1a1a1a 70%);
+            border-bottom: 2px solid #333;
+            box-shadow: 0 4px 20px rgba(229, 9, 20, 0.15);
+        }
+
+        .logo-action {
+            font-family: 'Impact', 'Arial Black', sans-serif;
+            font-size: 3.5rem;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+            font-style: italic;
+            margin: 0;
+            display: inline-block;
+            position: relative;
+            background: linear-gradient(to bottom, #ffffff 0%, #f1f1f1 40%, #7c7c7c 50%, #f5f5f5 55%, #9c9c9c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0px 0px 2px rgba(255,255,255,0.6)) 
+                    drop-shadow(3px 4px 0px #000)
+                    drop-shadow(0px 0px 15px rgba(229, 9, 20, 0.6));
+        }
+
+        .logo-action::before {
+            content: "MA";
+            position: absolute;
+            top: -20px;
+            left: 2px;
+            font-size: 1.2rem;
+            letter-spacing: 4px;
+            color: #e50914;
+            -webkit-text-fill-color: #e50914;
+            font-style: normal;
+            font-weight: 900;
+            text-shadow: 0px 0px 8px rgba(229, 9, 20, 0.8), 1px 1px 0px #000;
+        }
+
+        /* Barre de recherche et filtres */
+        .search-filters-bar {
+            max-width: 1400px;
+            margin: 0 auto 30px auto;
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .filter-group input, .filter-group select {
+            background-color: var(--input-bg);
+            color: white;
+            border: 1px solid #444;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .filter-group input:focus, .filter-group select:focus {
+            border-color: var(--accent-color);
+        }
+
+        /* Bouton Spécial pour voir la sélection */
+        .btn-toggle-selection {
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+        .btn-toggle-selection.active {
+            background-color: var(--selection-color);
+            border-color: var(--selection-color);
+            color: #000;
+        }
+
+        /* Zone d'action pour envoyer la sélection */
+        .selection-actions-panel {
+            display: none;
+            max-width: 1400px;
+            margin: 0 auto 20px auto;
+            background: linear-gradient(135deg, #1e3c2b 0%, #262626 100%);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--selection-color);
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .selection-actions-panel.active {
+            display: flex;
+        }
+        .btn-send-mail {
+            background-color: var(--selection-color);
+            color: #000;
+            border: none;
+            padding: 12px 25px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: opacity 0.2s;
+        }
+        .btn-send-mail:hover {
+            opacity: 0.9;
+        }
+
+        .results-count {
+            width: 100%;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        /* Grille */
+        .movies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 25px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .movie-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .movie-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.5);
+        }
+
+        /* Badge indiquant si le film est sélectionné */
+        .movie-card.selected {
+            border: 2px solid var(--selection-color);
+            box-sizing: border-box;
+        }
+        .selected-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: var(--selection-color);
+            color: black;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border-radius: 4px;
+            z-index: 5;
+            display: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+        .movie-card.selected .selected-badge {
+            display: block;
+        }
+
+        .poster-wrapper {
+            position: relative;
+            padding-top: 150%;
+            background-color: #333;
+        }
+
+        .movie-poster {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .movie-info-summary {
+            padding: 15px;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .movie-title {
+            margin: 0;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        /* Boutons de contrôle */
+        .controls {
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .btn-more {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-more:hover {
+            background-color: #b80710;
+        }
+
+        .btn-more:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            display: none;
+        }
+
+        /* Modale */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--modal-overlay);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            border-radius: 12px;
+            overflow-y: auto;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 2rem;
+            color: var(--text-color);
+            cursor: pointer;
+            z-index: 10;
+            background: rgba(0,0,0,0.5);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (min-width: 600px) {
+            .modal-body {
+                flex-direction: row;
+            }
+        }
+
+        .modal-poster {
+            width: 100%;
+            max-width: 300px;
+            object-fit: cover;
+            margin: 0 auto;
+        }
+
+        .modal-details {
+            padding: 30px;
+            flex-grow: 1;
+        }
+
+        .modal-title {
+            margin-top: 0;
+            color: var(--accent-color);
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        /* Bouton Sélectionner dans la Modale */
+        .btn-select-movie {
+            background-color: #444;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        .btn-select-movie.selected {
+            background-color: var(--selection-color);
+            color: black;
+        }
+
+        .metadata {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .metadata strong {
+            color: var(--text-color);
+        }
+
+        .synopsis {
+            line-height: 1.6;
+            font-size: 1rem;
+            border-top: 1px solid #444;
+            padding-top: 15px;
+        }
+
+        @media (max-width: 600px) {
+            .logo-action {
+                font-size: 2.2rem;
+            }
+            .logo-action::before {
+                top: -14px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 class="logo-action">DVDthèque</h1>
+    </header>
+
+    <!-- Panneau de la sélection (visible s'il y a des films sélectionnés) -->
+    <div class="selection-actions-panel" id="selection-panel">
+        <div>
+            <h3 style="margin:0; color:var(--selection-color);">Ma sélection en cours</h3>
+            <span id="selection-count-text" style="font-size:0.9rem; color:var(--text-secondary);">0 film sélectionné</span>
+        </div>
+        <button class="btn-send-mail" id="btn-send-mail">✉ Envoyer cette liste par mail</button>
+    </div>
+
+    <div class="search-filters-bar">
+        <div class="filter-group">
+            <label for="search-input">Recherche libre</label>
+            <input type="text" id="search-input" placeholder="Titre, réalisateur, mots-clés...">
+        </div>
+        
+        <div class="filter-group">
+            <label for="genre-filter">Genre</label>
+            <select id="genre-filter">
+                <option value="">Tous les genres</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="year-filter">Année de sortie</label>
+            <select id="year-filter">
+                <option value="">Toutes les années</option>
+            </select>
+        </div>
+
+        <!-- Bouton Filtre Spécial Sélection -->
+        <button class="btn-toggle-selection" id="btn-toggle-selection">
+            <span>⭐ Voir uniquement ma sélection</span> (<span id="badge-selection-total">0</span>)
+        </button>
+
+        <div class="results-count" id="results-count">Chargement des films...</div>
+    </div>
+
+    <main class="movies-grid" id="movies-grid"></main>
+
+    <div class="controls">
+        <button id="btn-load-more" class="btn-more">Voir plus</button>
+    </div>
+
+    <div class="modal" id="movie-modal">
+        <div class="modal-content">
+            <span class="close-modal" id="close-modal">&times;</span>
+            <div class="modal-body">
+                <img id="modal-img" class="modal-poster" src="" alt="Affiche du film">
+                <div class="modal-details">
+                    <h2 id="modal-title" class="modal-title"></h2>
+                    
+                    <!-- Nouveau Bouton de sélection dans le détail d'un film -->
+                    <button class="btn-select-movie" id="btn-modal-select">⭐ Ajouter à ma sélection</button>
+
+                    <div class="metadata">
+                        <div id="modal-original-title"></div>
+                        <div><strong>Réalisateur :</strong> <span id="modal-director"></span></div>
+                        <div><strong>Année :</strong> <span id="modal-year"></span></div>
+                        <div><strong>Durée :</strong> <span id="modal-duration"></span> min</div>
+                        <div><strong>Genre(s) :</strong> <span id="modal-genres"></span></div>
+                        <div><strong>Format :</strong> <span id="modal-format"></span></div>
+                    </div>
+                    <p id="modal-synopsis" class="synopsis"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURATION : Mettez votre adresse email ici si vous voulez la pré-remplir automatiquement !
+        const MON_EMAIL_DESTINATAIRE = "votre-email@exemple.com"; 
+
+        const FILMS_PER_PAGE = 50;
+        let currentIndex = 0;
+        
+        let allMoviesSorted = [];   
+        let filteredMovies = [];    
+        let selectedMovieTitles = JSON.parse(localStorage.getItem('myDvdSelection')) || []; // Stockage local des titres sélectionnés
+        let showOnlySelectedMode = false;
+
+        const searchInput = document.getElementById('search-input');
+        const genreFilter = document.getElementById('genre-filter');
+        const yearFilter = document.getElementById('year-filter');
+        const resultsCount = document.getElementById('results-count');
+        const moviesGrid = document.getElementById('movies-grid');
+        const btnLoadMore = document.getElementById('btn-load-more');
+        const movieModal = document.getElementById('movie-modal');
+        const closeModalBtn = document.getElementById('close-modal');
+        const btnToggleSelection = document.getElementById('btn-toggle-selection');
+        const badgeSelectionTotal = document.getElementById('badge-selection-total');
+        const selectionPanel = document.getElementById('selection-panel');
+        const selectionCountText = document.getElementById('selection-count-text');
+        const btnSendMail = document.getElementById('btn-send-mail');
+
+        const mImg = document.getElementById('modal-img');
+        const mTitle = document.getElementById('modal-title');
+        const mOrigTitle = document.getElementById('modal-original-title');
+        const mDirector = document.getElementById('modal-director');
+        const mYear = document.getElementById('modal-year');
+        const mDuration = document.getElementById('modal-duration');
+        const mGenres = document.getElementById('modal-genres');
+        const mFormat = document.getElementById('modal-format');
+        const mSynopsis = document.getElementById('modal-synopsis');
+        const btnModalSelect = document.getElementById('btn-modal-select');
+        
+        let currentActiveMovie = null;
+
+        function init() {
+            updateSelectionUI();
+
+            fetch('dvdtheque13072026.json')
+                .then(response => {
+                    if (!response.ok) throw new Error("Impossible de récupérer le fichier JSON");
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data.dvds) throw new Error("Structure de données invalide");
+
+                    allMoviesSorted = [...data.dvds].sort((a, b) => {
+                        return (a.title || '').localeCompare(b.title || '', 'fr', { sensitivity: 'base' });
+                    });
+
+                    populateFilterOptions(allMoviesSorted);
+                    applyFilters();
+
+                    searchInput.addEventListener('input', applyFilters);
+                    genreFilter.addEventListener('change', applyFilters);
+                    yearFilter.addEventListener('change', applyFilters);
+                    btnLoadMore.addEventListener('click', loadMoreMovies);
+                    
+                    // Clic sur "Voir uniquement ma sélection"
+                    btnToggleSelection.addEventListener('click', () => {
+                        showOnlySelectedMode = !showOnlySelectedMode;
+                        btnToggleSelection.classList.toggle('active', showOnlySelectedMode);
+                        applyFilters();
+                    });
+
+                    // Clic sur "Envoyer le mail"
+                    btnSendMail.addEventListener('click', sendSelectionByEmail);
+                })
+                .catch(error => {
+                    console.error(error);
+                    resultsCount.innerText = "Erreur de chargement";
+                    moviesGrid.innerHTML = `<p style='text-align:center; width:100%;'>Erreur : Impossible de lire le fichier (${error.message}).</p>`;
+                    btnLoadMore.style.display = 'none';
+                });
+
+            closeModalBtn.addEventListener('click', closeModal);
+            movieModal.addEventListener('click', (e) => {
+                if (e.target === movieModal) closeModal();
+            });
+
+            // Action de sélection dans la fenêtre de détails (modale)
+            btnModalSelect.addEventListener('click', () => {
+                if (!currentActiveMovie) return;
+                toggleMovieSelection(currentActiveMovie.title);
+                updateModalSelectButtonState(currentActiveMovie.title);
+                applyFilters(); // Rafraîchit les visuels en arrière-plan
+            });
+        }
+
+        function populateFilterOptions(movies) {
+            const genresSet = new Set();
+            const yearsSet = new Set();
+
+            movies.forEach(movie => {
+                if (movie.genres && typeof movie.genres === 'string') {
+                    movie.genres.split(',').forEach(g => genresSet.add(g.trim()));
+                }
+                if (movie.year) {
+                    yearsSet.add(movie.year);
+                }
+            });
+
+            Array.from(genresSet).sort().forEach(genre => {
+                const opt = document.createElement('option');
+                opt.value = genre; opt.innerText = genre;
+                genreFilter.appendChild(opt);
+            });
+
+            Array.from(yearsSet).sort((a, b) => b - a).forEach(year => {
+                const opt = document.createElement('option');
+                opt.value = year; opt.innerText = year;
+                yearFilter.appendChild(opt);
+            });
+        }
+
+        function applyFilters() {
+            const searchText = searchInput.value.toLowerCase().trim();
+            const selectedGenre = genreFilter.value;
+            const selectedYear = yearFilter.value;
+
+            filteredMovies = allMoviesSorted.filter(movie => {
+                // Filtre mode Sélection
+                const matchSelectionMode = !showOnlySelectedMode || selectedMovieTitles.includes(movie.title);
+
+                const matchSearch = !searchText || 
+                    (movie.title && movie.title.toLowerCase().includes(searchText)) ||
+                    (movie.director && movie.director.toLowerCase().includes(searchText)) ||
+                    (movie.synopsis && movie.synopsis.toLowerCase().includes(searchText));
+
+                const matchGenre = !selectedGenre || 
+                    (movie.genres && typeof movie.genres === 'string' && movie.genres.split(',').map(g => g.trim()).includes(selectedGenre));
+
+                const matchYear = !selectedYear || 
+                    (movie.year && movie.year.toString() === selectedYear);
+
+                return matchSelectionMode && matchSearch && matchGenre && matchYear;
+            });
+
+            moviesGrid.innerHTML = '';
+            currentIndex = 0;
+            
+            resultsCount.innerText = `${filteredMovies.length} film${filteredMovies.length > 1 ? 's' : ''} trouvé${filteredMovies.length > 1 ? 's' : ''}`;
+
+            loadMoreMovies();
+        }
+
+        function loadMoreMovies() {
+            const nextLimit = currentIndex + FILMS_PER_PAGE;
+            const chunk = filteredMovies.slice(currentIndex, nextLimit);
+
+            if (chunk.length === 0 && currentIndex === 0) {
+                moviesGrid.innerHTML = "<p style='text-align:center; width:100%; color:var(--text-secondary);'>Aucun film ne correspond à vos critères.</p>";
+                btnLoadMore.style.display = 'none';
+                return;
+            }
+
+            chunk.forEach(movie => {
+                const card = document.createElement('div');
+                card.className = 'movie-card';
+                
+                // Si déjà sélectionné, on applique la bordure verte
+                if (selectedMovieTitles.includes(movie.title)) {
+                    card.classList.add('selected');
+                }
+                
+                const posterSrc = movie.posterUrl || 'https://via.placeholder.com/500x750?text=Pas+d%27image';
+
+                card.innerHTML = `
+                    <div class="selected-badge">SÉLECTIONNÉ</div>
+                    <div class="poster-wrapper">
+                        <img class="movie-poster" src="${posterSrc}" alt="Affiche de ${movie.title}" loading="lazy">
+                    </div>
+                    <div class="movie-info-summary">
+                        <h3 class="movie-title">${movie.title}</h3>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => openModal(movie));
+                moviesGrid.appendChild(card);
+            });
+
+            currentIndex = nextLimit;
+
+            if (currentIndex >= filteredMovies.length) {
+                btnLoadMore.disabled = true;
+                btnLoadMore.style.display = 'none';
+            } else {
+                btnLoadMore.disabled = false;
+                btnLoadMore.style.display = 'inline-block';
+                btnLoadMore.innerText = `Voir plus (${filteredMovies.length - currentIndex} restants)`;
+            }
+        }
+
+        // Ajoute ou supprime un film de la liste de favoris
+        function toggleMovieSelection(title) {
+            const index = selectedMovieTitles.indexOf(title);
+            if (index > -1) {
+                selectedMovieTitles.splice(index, 1); // Enlever
+            } else {
+                selectedMovieTitles.push(title); // Ajouter
+            }
+            localStorage.setItem('myDvdSelection', JSON.stringify(selectedMovieTitles));
+            updateSelectionUI();
+        }
+
+        // Met à jour les textes et compteurs liés à la sélection
+        function updateSelectionUI() {
+            const count = selectedMovieTitles.length;
+            badgeSelectionTotal.innerText = count;
+            selectionCountText.innerText = `${count} film${count > 1 ? 's' : ''} sélectionné${count > 1 ? 's' : ''}`;
+            
+            // Afficher le bandeau d'envoi par mail si au moins 1 film est coché
+            if (count > 0) {
+                selectionPanel.classList.add('active');
+            } else {
+                selectionPanel.classList.remove('active');
+                if (showOnlySelectedMode) {
+                    showOnlySelectedMode = false;
+                    btnToggleSelection.classList.remove('active');
+                }
+            }
+        }
+
+        function updateModalSelectButtonState(title) {
+            if (selectedMovieTitles.includes(title)) {
+                btnModalSelect.innerText = "✓ Sélectionné (Cliquer pour retirer)";
+                btnModalSelect.classList.add('selected');
+            } else {
+                btnModalSelect.innerText = "⭐ Ajouter à ma sélection";
+                btnModalSelect.classList.remove('selected');
+            }
+        }
+
+        function openModal(movie) {
+            currentActiveMovie = movie;
+            mImg.src = movie.posterUrl || 'https://via.placeholder.com/500x750?text=Pas+d%27image';
+            mImg.alt = `Affiche de ${movie.title}`;
+            mTitle.innerText = movie.title;
+            
+            updateModalSelectButtonState(movie.title);
+
+            if (movie.originalTitle && movie.originalTitle !== movie.title) {
+                mOrigTitle.innerHTML = `<em>Titre original : ${movie.originalTitle}</em><br><br>`;
+            } else {
+                mOrigTitle.innerText = '';
+            }
+
+            mDirector.innerText = movie.director || 'Inconnu';
+            mYear.innerText = movie.year || 'Non renseignée';
+            mDuration.innerText = movie.durationMinutes || '0';
+            mGenres.innerText = movie.genres || 'Non spécifié';
+            mFormat.innerText = movie.format || 'Non spécifié';
+            mSynopsis.innerText = movie.synopsis || 'Aucun résumé disponible pour ce film.';
+
+            movieModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            movieModal.classList.remove('active');
+            document.body.style.overflow = '';
+            currentActiveMovie = null;
+        }
+
+        // Génération automatique du mail pré-rempli
+        function sendSelectionByEmail() {
+            if (selectedMovieTitles.length === 0) return;
+
+            const sujet = encodeURIComponent("Ma sélection de films - DVDthèque");
+            
+            let corpsMessage = "Bonjour,\n\nVoici la liste des films qui m'intéressent dans votre DVDthèque :\n\n";
+            selectedMovieTitles.forEach((titre, idx) => {
+                corpsMessage += `${idx + 1}. ${titre}\n`;
+            });
+            corpsMessage += "\nMerci et à bientôt !";
+            
+            const corpsEmailBrut = encodeURIComponent(corpsMessage);
+
+            // Déclenche l'ouverture du client de messagerie
+            window.location.href = `mailto:${MON_EMAIL_DESTINATAIRE}?subject=${sujet}&body=${corpsEmailBrut}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
